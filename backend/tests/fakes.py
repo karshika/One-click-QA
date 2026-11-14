@@ -60,6 +60,30 @@ class ReplayProvider(LLMProvider):
         return LLMResponse(data["default"], 500, 300, request.model)
 
 
+class MockMistral(ReplayProvider):
+    """Replay fixtures for planner/generator/repair/summary; the analyst answer is derived from
+    the issue list in the prompt (ids are run-specific), mimicking a recorded classification."""
+
+    name = "mock-mistral"
+
+    async def complete(self, request: LLMRequest) -> LLMResponse:
+        system = next((m["content"] for m in request.messages if m["role"] == "system"), "")
+        if "[prompt:analyst]" in system:
+            self.requests.append(request)
+            user = request.messages[1]["content"]
+            issues = json.loads(user.split("Issues (JSON):", 1)[1].strip())
+            out = []
+            for i in issues:
+                cls = {"flaky_test": "flaky", "test_error": "test_error", "ui_environment": "environment"}.get(
+                    i["kind"], "app_bug")
+                out.append({"issue_id": i["issue_id"], "classification": cls, "severity": i["default_severity"],
+                            "title": i["default_title"][:150], "impact": "Recorded analyst impact.",
+                            "root_cause": "Recorded likely root cause.", "repro_steps": ["Step 1", "Step 2"],
+                            "suggested_fix": "Recorded suggested fix.", "duplicate_of": None})
+            return LLMResponse(json.dumps({"issues": out}), 900, 600, request.model)
+        return await super().complete(request)
+
+
 async def _no_sleep(_: float) -> None:
     return None
 

@@ -1,0 +1,11 @@
+{
+  "match": [
+    {"contains": "Browse products and open a product",
+     "text": "```python\nimport re\n\n\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/products\")\n    page.get_by_role(\"link\", name=\"Ceramic Mug\").click()\n    expect(page).to_have_url(re.compile(r\"/products/2$\"))\n    expect(page.get_by_role(\"heading\", name=\"Ceramic Mug\")).to_be_visible()\n```"},
+    {"contains": "Send a message through the contact form",
+     "text": "```python\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/contact\")\n    page.get_by_label(\"Name\").fill(\"QA Tester\")\n    page.get_by_label(\"Email\").fill(ctx.unique_email())\n    page.get_by_label(\"Message\").fill(\"Hello from OneClickQA\")\n    page.get_by_role(\"button\", name=\"Send message\").click()\n    expect(page.get_by_role(\"heading\", level=1)).to_contain_text(\"Thank you\")\n```"},
+    {"contains": "Open the monthly report from the navigation",
+     "text": "```python\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/\")\n    page.get_by_role(\"link\", name=\"Monthly reports\", exact=True).click()\n    expect(page.get_by_role(\"heading\", name=\"Monthly report\")).to_be_visible()\n```"}
+  ],
+  "default": "```python\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/\")\n    expect(page).to_have_title(re.compile(\".+\"))\n```"
+}

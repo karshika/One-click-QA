@@ -1,0 +1,7 @@
+{
+  "match": [
+    {"contains": "Monthly reports",
+     "text": "```python\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/\")\n    page.get_by_role(\"navigation\", name=\"Main\").get_by_role(\"link\", name=\"Reports\").click()\n    expect(page.get_by_role(\"heading\", name=\"Monthly report\")).to_be_visible(timeout=10000)\n```"}
+  ],
+  "default": "```python\ndef test_journey(page, expect, ctx):\n    page.goto(ctx.base_url + \"/\")\n```"
+}

@@ -222,7 +222,7 @@ def render_markdown(run_id: int) -> str:
     lines += ["", "## Performance (median)", "", "| Page | TTFB | FCP | LCP | CLS |", "|---|---|---|---|---|"]
     for p in d["perf"]:
         lines.append(f"| {p.page_url} | {_fmt(p.ttfb)} ms | {_fmt(p.fcp)} ms | {_fmt(p.lcp)} ms | "
-                     f"{p.cls if p.cls is not None else 'n/a'} |")
+                     f"{p.cls_score if p.cls_score is not None else 'n/a'} |")
     llm = d["llm"]
     lines += ["", "## LLM usage", "", f"{llm['calls']} API call(s) of a {llm['budget']}-call budget · "
               f"{llm['cache_hits']} cache hit(s) · {llm['tokens_in']} tokens in / {llm['tokens_out']} out", "",
@@ -234,7 +234,11 @@ def render_markdown(run_id: int) -> str:
 def _embed(path: str | None, max_bytes: int = 450_000) -> str | None:
     if not path:
         return None
+    from app.config import get_settings
+
     p = Path(path)
+    if not p.is_absolute():
+        p = get_settings().artifacts_dir / p
     if not p.is_file() or p.stat().st_size > max_bytes:
         return None
     return "data:image/png;base64," + base64.b64encode(p.read_bytes()).decode()

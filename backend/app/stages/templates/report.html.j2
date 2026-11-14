@@ -89,7 +89,7 @@
 
   <h2>Performance (median of runs)</h2>
   <table><thead><tr><th scope="col">Page</th><th scope="col">TTFB</th><th scope="col">FCP</th><th scope="col">LCP</th><th scope="col">CLS</th><th scope="col">Requests</th></tr></thead><tbody>
-  {% for p in perf %}<tr><td>{{ p.page_url }}</td><td class="num">{{ fmt(p.ttfb) }} ms</td><td class="num">{{ fmt(p.fcp) }} ms</td><td class="num">{{ fmt(p.lcp) }} ms</td><td class="num">{{ p.cls if p.cls is not none else "n/a" }}</td><td class="num">{{ fmt(p.request_count) }}</td></tr>{% else %}<tr><td colspan="6">No performance data.</td></tr>{% endfor %}
+  {% for p in perf %}<tr><td>{{ p.page_url }}</td><td class="num">{{ fmt(p.ttfb) }} ms</td><td class="num">{{ fmt(p.fcp) }} ms</td><td class="num">{{ fmt(p.lcp) }} ms</td><td class="num">{{ p.cls_score if p.cls_score is not none else "n/a" }}</td><td class="num">{{ fmt(p.request_count) }}</td></tr>{% else %}<tr><td colspan="6">No performance data.</td></tr>{% endfor %}
   </tbody></table>
 
   <h2>LLM usage</h2>

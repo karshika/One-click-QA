@@ -1,0 +1,3 @@
+{
+  "default": "ShopLite needs attention before release. The most serious problem is that the sign-in form accepts the correct password typed with the wrong letter case, which weakens account security. Two API endpoints misbehave: one crashes with a server error when given an id of zero, and another returns data that does not match its documented format. The home page has accessibility gaps (an image without a description, an unlabeled button and hard-to-read text) and a banner that makes the page jump while loading. The reports page is slow, taking about three seconds to respond. Fix the login check first, then the API errors."
+}

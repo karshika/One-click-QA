@@ -217,8 +217,23 @@ def collect_issues(ctx: RunContext) -> list[dict[str, Any]]:  # noqa: C901 - fla
     return [mask_obj(i, ctx.secrets) for i in issues]
 
 
+def _bucket(metric: str, v: Any) -> Any:
+    """Coarse values for the LLM so run-to-run timing noise doesn't defeat the prompt cache."""
+    if not isinstance(v, int | float):
+        return v
+    if metric == "cls":
+        return round(round(v / 0.05) * 0.05, 2)
+    if metric in ("transfer_size", "request_count"):
+        return v
+    return f"~{round(v / 500) * 0.5:.1f}s"
+
+
 def _llm_view(i: dict[str, Any]) -> dict[str, Any]:
     ev = {k: v for k, v in i["evidence"].items() if k not in ("screenshot", "trace", "video", "samples")}
+    if isinstance(ev.get("metrics"), dict):
+        ev["metrics"] = {k: _bucket(k, v) for k, v in ev["metrics"].items() if k in ("ttfb", "fcp", "lcp", "cls")}
+    if "error" in ev and isinstance(ev["error"], str):
+        ev["error"] = re.sub(r"\d+(\.\d+)?ms", "<n>ms", ev["error"])
     text = json.dumps(ev, ensure_ascii=False, default=str)[:900]
     return {"issue_id": i["id"], "category": i["category"], "kind": i["kind"], "default_title": i["title"],
             "default_severity": i["severity"], "retry_passed": i["kind"] == "flaky_test",
