@@ -69,7 +69,7 @@ def template_journeys(ctx: RunContext) -> list[JourneyData]:
     login_page = find_login_page(ctx.pages)
     if login_page and ctx.credentials and ctx.credentials.username:
         path = ctx.path_of(login_page.url)
-        common = dict(kind="login", start_url=path, pages=[path], source="template")
+        common: dict[str, Any] = dict(kind="login", start_url=path, pages=[path], source="template")
         js.append(JourneyData(key="tpl-login-valid", name="Login with valid credentials", priority=1,
                               description="The configured test account can sign in.",
                               steps=["Open the sign-in page", "Enter the test account email and password",

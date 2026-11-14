@@ -131,7 +131,6 @@ def team_image() -> Response:
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def home() -> HTMLResponse:
     body = """
-<div id="banner-slot"></div>
 <h1>Welcome to ShopLite</h1>
 <p>Simple, well-made everyday goods. Browse our <a href="/products">products</a> or
 <a href="/contact">get in touch</a>.</p>
@@ -154,6 +153,18 @@ def home() -> HTMLResponse:
 <p>We ship within two business days and every product comes with a 30-day return policy.
 Our packaging is fully recyclable and we work directly with small makers.</p>
 <p>Questions? Our support team answers every message within one business day.</p>
+
+<h2>Featured this week</h2>
+<ul>
+  <li><a href="/products/1">Canvas Tote Bag</a>: sturdy organic cotton, made to last for years.</li>
+  <li><a href="/products/2">Ceramic Mug</a>: hand-glazed stoneware that keeps your coffee warm.</li>
+  <li><a href="/products/4">Notebook Set</a>: three dot-grid notebooks with recycled paper.</li>
+</ul>
+
+<h2>Our promise</h2>
+<p>Every item in our shop is chosen by hand. We visit the workshops, test the products ourselves and only
+sell what we would happily use at home. If something is not right, we fix it, no questions asked.</p>
+<p>Orders above $40 ship for free. Gift wrapping is available at checkout for every order.</p>
 """
     # BUG B6: banner injected late without reserved space → layout shift (CLS)
     # BUG B9: uncaught JavaScript error on load (initCarousel is not defined)
@@ -163,9 +174,9 @@ window.addEventListener('load', function () {
   setTimeout(function () {
     var b = document.createElement('div');
     b.className = 'promo';
-    b.style.height = '220px';
+    b.style.height = '400px';
     b.innerHTML = '<strong>Autumn sale!</strong> 20% off everything this week.';
-    document.getElementById('banner-slot').appendChild(b);
+    document.body.insertBefore(b, document.body.firstChild);
   }, 700);
   initCarousel();
 });

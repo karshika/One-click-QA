@@ -63,11 +63,12 @@ def sandbox_env(tmpdir: str) -> dict[str, str]:
 
 
 def _posix_limits() -> None:  # pragma: no cover - linux only
-    import resource
+    if sys.platform != "win32":
+        import resource
 
-    resource.setrlimit(resource.RLIMIT_CPU, (180, 180))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (300 * 1024 * 1024, 300 * 1024 * 1024))
-    os.setsid()
+        resource.setrlimit(resource.RLIMIT_CPU, (180, 180))
+        resource.setrlimit(resource.RLIMIT_FSIZE, (300 * 1024 * 1024, 300 * 1024 * 1024))
+        os.setsid()
 
 
 async def run_in_sandbox(script: str, *, ctx: RunContext, out_dir: Path) -> dict[str, Any]:
