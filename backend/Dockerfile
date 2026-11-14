@@ -10,7 +10,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY pyproject.toml ./
 COPY app ./app
-RUN pip install . && python -m playwright install --with-deps chromium
+# libatomic1: required by Playwright's bundled Node driver (missing from slim images)
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --root-user-action=ignore . \
+    && python -m playwright install --with-deps chromium
 
 # Run as an unprivileged user; generated tests run in subprocesses as this user too.
 RUN useradd -m -u 10001 ocqa && mkdir -p /data && chown -R ocqa /data /ms-playwright
