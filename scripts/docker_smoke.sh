@@ -5,7 +5,21 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 API=http://localhost:8000
-cleanup() { docker compose logs --tail=80 backend || true; docker compose down -v || true; }
+LOG=$(mktemp)
+exec > >(tee -a "$LOG") 2>&1
+cleanup() {
+  code=$?
+  if [ "$code" -ne 0 ]; then
+    docker compose ps -a || true
+    docker compose logs --tail=60 backend frontend || true
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+      # surface the failure as a (publicly readable) annotation
+      msg=$(tail -n 45 "$LOG" | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+      echo "::error title=docker smoke test failed::${msg}"
+    fi
+  fi
+  docker compose down -v || true
+}
 trap cleanup EXIT
 
 docker compose up -d --build
