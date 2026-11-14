@@ -349,7 +349,7 @@ bearer = HTTPBearer(auto_error=False)
 
 @app.get("/api/orders", response_model=list[Order], tags=["orders"],
          responses={401: {"description": "Not authenticated"}})
-def list_orders(request: Request, creds: Any = Depends(bearer)) -> list[dict[str, Any]]:
+def list_orders(request: Request, creds: Any = Depends(bearer)) -> list[dict[str, Any]]:  # noqa: B008
     user = _user(request) or (SESSIONS.get(creds.credentials) if creds else None)
     if not user:
         raise HTTPException(401, "Not authenticated")

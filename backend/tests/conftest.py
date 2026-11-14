@@ -30,3 +30,37 @@ def _engine() -> Iterator[None]:
 @pytest.fixture
 def tmp_data(tmp_path: Path) -> Path:
     return tmp_path
+
+
+def _free_port() -> int:
+    import socket
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+@pytest.fixture(scope="session")
+def demo_url() -> Iterator[str]:
+    """Runs the ShopLite demo app on a free port for browser/e2e tests."""
+    import threading
+    import time
+
+    import httpx
+    import uvicorn
+
+    demo = pytest.importorskip("demo_app.main")
+    port = _free_port()
+    server = uvicorn.Server(uvicorn.Config(demo.app, host="127.0.0.1", port=port, log_level="warning"))
+    t = threading.Thread(target=server.run, daemon=True)
+    t.start()
+    url = f"http://127.0.0.1:{port}"
+    for _ in range(100):
+        try:
+            if httpx.get(url + "/api/health", timeout=1).status_code == 200:
+                break
+        except httpx.HTTPError:
+            time.sleep(0.1)
+    yield url
+    server.should_exit = True
+    t.join(timeout=5)
