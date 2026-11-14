@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OneClickQA report: {{ project.name if project else "" }} (run #{{ run.id }})</title>
+<style>
+  :root { --text:#111827; --muted:#4b5563; --border:#dfe3e8; --bg:#ffffff; --soft:#f4f6f8;
+          --crit:#8a1c13; --high:#b42318; --med:#8a5300; --low:#3b5168; --good:#137a3f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 36px 0 12px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h3 { font-size: 16px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  .scores { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+  .score { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--soft); }
+  .score .v { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score.main .v { font-size: 44px; }
+  .finding { border: 1px solid var(--border); border-left: 5px solid var(--low); border-radius: 8px; padding: 14px 16px; margin: 12px 0; break-inside: avoid; }
+  .finding.critical { border-left-color: var(--crit); } .finding.high { border-left-color: var(--high); }
+  .finding.medium { border-left-color: var(--med); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); margin-right: 4px; }
+  .sev-critical { color: #fff; background: var(--crit); border-color: var(--crit); }
+  .sev-high { color: #fff; background: var(--high); border-color: var(--high); }
+  .sev-medium { color: #fff; background: var(--med); border-color: var(--med); }
+  .sev-low { color: #fff; background: var(--low); border-color: var(--low); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--soft); }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  img.shot { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; margin-top: 8px; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 40px; }
+  @media (max-width: 720px) { .scores { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>OneClickQA report: {{ project.name if project else "" }}</h1>
+  <div class="muted">{{ project.base_url if project else "" }} · run #{{ run.id }} · {{ run.status }} · generated {{ generated_at }}</div>
+
+  <div class="scores">
+    <div class="score main"><div class="muted">Quality score</div><div class="v">{{ fmt(run.score) }}</div><div class="muted">grade {{ grade }}</div></div>
+    <div class="score"><div class="muted">UI flows · 40</div><div class="v">{{ fmt(run.ui_score) }}</div></div>
+    <div class="score"><div class="muted">API · 25</div><div class="v">{{ fmt(run.api_score) }}</div></div>
+    <div class="score"><div class="muted">Accessibility · 20</div><div class="v">{{ fmt(run.a11y_score) }}</div></div>
+    <div class="score"><div class="muted">Performance · 15</div><div class="v">{{ fmt(run.perf_score) }}</div></div>
+  </div>
+
+  <h2>Summary</h2>
+  {{ summary_html | safe }}
+  {% if not run.summary_ai %}<p class="muted"><em>Summary generated without AI.</em></p>{% endif %}
+  {% if run.comparison and run.comparison.previous_run_id %}
+  <p><strong>Compared with run #{{ run.comparison.previous_run_id }}:</strong> {{ run.comparison.new }} new issue(s), {{ run.comparison.fixed }} fixed, {{ run.comparison.persisting }} still open.</p>
+  {% endif %}
+
+  <h2>Findings ({{ findings | selectattr("status", "equalto", "open") | list | length }} open)</h2>
+  {% for f in findings %}
+  <div class="finding {{ f.severity }}">
+    <h3>{{ f.title }}</h3>
+    <div><span class="pill sev-{{ f.severity }}">{{ f.severity }}</span><span class="pill">{{ f.category }}</span><span class="pill">{{ f.classification | replace("_", " ") }}</span><span class="pill">{{ f.status }}</span>{% if f.ai_unverified %}<span class="pill">AI-suggested, unverified</span>{% endif %}</div>
+    <p>{{ f.description }}</p>
+    {% if f.impact %}<p><strong>Impact:</strong> {{ f.impact }}</p>{% endif %}
+    {% if f.root_cause %}<p><strong>Likely cause:</strong> {{ f.root_cause }}</p>{% endif %}
+    {% if f.repro_steps %}<p><strong>Steps to reproduce:</strong></p><ol>{% for s in f.repro_steps %}<li>{{ s }}</li>{% endfor %}</ol>{% endif %}
+    {% if f.suggested_fix %}<p><strong>Suggested fix:</strong> {{ f.suggested_fix }}</p>{% endif %}
+    {% if f.evidence and f.evidence.help_url %}<p><a href="{{ f.evidence.help_url }}">axe-core rule documentation</a></p>{% endif %}
+    {% if shots.get(f.id) %}<img class="shot" src="{{ shots[f.id] }}" alt="Screenshot at the moment the test failed: {{ f.title }}">{% endif %}
+  </div>
+  {% else %}
+  <p>No findings.</p>
+  {% endfor %}
+
+  <h2>UI journeys</h2>
+  <table><thead><tr><th scope="col">Journey</th><th scope="col">Script</th><th scope="col">Result</th><th scope="col">Attempts</th></tr></thead><tbody>
+  {% for u in ui %}<tr><td>{{ u.journey }}</td><td>{{ u.source }}</td><td>{{ u.status }}</td><td class="num">{{ u.attempts }}</td></tr>{% else %}<tr><td colspan="4">No UI tests ran.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>API checks</h2>
+  <table><thead><tr><th scope="col">Endpoint</th><th scope="col">Check</th><th scope="col">Result</th><th scope="col">HTTP</th><th scope="col">Latency</th></tr></thead><tbody>
+  {% for a in api %}<tr><td><code>{{ a.method }} {{ a.path }}</code></td><td>{{ a.check }}</td><td>{{ a.status }}</td><td class="num">{{ a.status_code or "" }}</td><td class="num">{{ "%.0f ms" % a.latency_ms if a.latency_ms is not none else "" }}</td></tr>{% else %}<tr><td colspan="5">No API checks ran.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Accessibility violations</h2>
+  <table><thead><tr><th scope="col">Page</th><th scope="col">Rule</th><th scope="col">Impact</th><th scope="col">Elements</th></tr></thead><tbody>
+  {% for v in a11y %}<tr><td>{{ v.page_url }}</td><td><a href="{{ v.help_url }}">{{ v.rule_id }}</a></td><td>{{ v.impact }}</td><td class="num">{{ v.node_count }}</td></tr>{% else %}<tr><td colspan="4">No violations found.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>Performance (median of runs)</h2>
+  <table><thead><tr><th scope="col">Page</th><th scope="col">TTFB</th><th scope="col">FCP</th><th scope="col">LCP</th><th scope="col">CLS</th><th scope="col">Requests</th></tr></thead><tbody>
+  {% for p in perf %}<tr><td>{{ p.page_url }}</td><td class="num">{{ fmt(p.ttfb) }} ms</td><td class="num">{{ fmt(p.fcp) }} ms</td><td class="num">{{ fmt(p.lcp) }} ms</td><td class="num">{{ p.cls_score if p.cls_score is not none else "n/a" }}</td><td class="num">{{ fmt(p.request_count) }}</td></tr>{% else %}<tr><td colspan="6">No performance data.</td></tr>{% endfor %}
+  </tbody></table>
+
+  <h2>LLM usage</h2>
+  <p>{{ llm.calls }} Mistral API call(s) of a {{ llm.budget }}-call budget · {{ llm.cache_hits }} cache hit(s) · {{ llm.tokens_in }} tokens in / {{ llm.tokens_out }} out.</p>
+
+  <p class="note">Pass/fail verdicts come only from Playwright assertions, axe-core, HTTP/schema checks and measured metrics. AI (Mistral) planned tests, wrote code and explained findings. Scoring weights: UI 40, API 25, Accessibility 20, Performance 15.</p>
+</div>
+</body>
+</html>

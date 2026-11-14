@@ -29,6 +29,14 @@ jobs:
       - name: Tests (Mistral mocked; real e2e skipped without MISTRAL_API_KEY)
         run: pytest -q
 
+  docker:
+    # Verifies `docker compose up`: builds all images, adds the demo app, runs QA end to end.
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x scripts/docker_smoke.sh && ./scripts/docker_smoke.sh
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
