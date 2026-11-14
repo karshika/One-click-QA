@@ -63,7 +63,7 @@ PLAYWRIGHT_METHODS = {
     # actions
     "click", "dblclick", "fill", "clear", "type", "press", "press_sequentially", "check",
     "uncheck", "set_checked", "select_option", "hover", "focus", "blur", "tap", "scroll_into_view_if_needed",
-    "wait_for", "dispatch_event",
+    "wait_for",
     # reads
     "inner_text", "inner_html", "text_content", "input_value", "get_attribute", "is_visible",
     "is_hidden", "is_enabled", "is_disabled", "is_checked", "is_editable", "all_inner_texts",
@@ -91,6 +91,17 @@ STR_METHODS = {
 RE_METHODS = {"compile", "search", "match", "fullmatch", "escape", "IGNORECASE", "I", "findall", "sub"}
 
 ALLOWED_METHODS = PLAYWRIGHT_METHODS | STR_METHODS | RE_METHODS
+
+# Attributes that lead to network/file-system/JS-execution capabilities – blocked on access,
+# not just on call (e.g. `page.context.request.get(...)`).
+FORBIDDEN_ATTRS = {
+    "context", "request", "browser", "evaluate", "evaluate_handle", "eval_on_selector",
+    "eval_on_selector_all", "route", "unroute", "route_from_har", "add_init_script", "add_script_tag",
+    "add_style_tag", "expose_function", "expose_binding", "set_extra_http_headers", "add_cookies",
+    "cookies", "storage_state", "pdf", "screenshot", "video", "tracing", "set_input_files", "on", "once",
+    "remove_listener", "wait_for_event", "frames", "main_frame", "workers", "service_workers", "opener",
+    "set_content", "api_request", "clock", "close", "dispatch_event",
+}
 
 CTX_ATTRS = {"base_url", "username", "password", "unique_email", "unique_text"}
 
@@ -217,6 +228,8 @@ class _Checker(ast.NodeVisitor):
     def visit_Attribute(self, node: ast.Attribute) -> None:
         if node.attr.startswith("_"):
             self.err(node, f"access to private/dunder attribute '{node.attr}' is forbidden")
+        if node.attr in FORBIDDEN_ATTRS:
+            self.err(node, f"access to '{node.attr}' is forbidden")
         if isinstance(node.value, ast.Name) and node.value.id == "ctx" and node.attr not in CTX_ATTRS:
             self.err(node, f"ctx has no attribute '{node.attr}' (allowed: {sorted(CTX_ATTRS)})")
         self.generic_visit(node)

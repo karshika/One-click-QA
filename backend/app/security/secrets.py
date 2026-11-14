@@ -80,4 +80,7 @@ def mask_obj(obj: Any, secrets: list[str] | None = None) -> Any:
 
 
 def _is_secret_key(k: object) -> bool:
-    return isinstance(k, str) and bool(re.search(r"(?i)password|passwd|secret|token|api[_-]?key|authorization|cookie", k))
+    return isinstance(k, str) and bool(_SECRET_KEY_RE.search(k))
+
+
+_SECRET_KEY_RE = re.compile(r"(?i)password|passwd|secret|token|api[_-]?key|authorization|cookie")
