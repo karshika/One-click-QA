@@ -47,12 +47,11 @@ async def install_guard(context: BrowserContext, cfg: GuardConfig, stats: GuardS
             await route.continue_()
             return
         same = is_allowed_host(url, cfg.base_url, cfg.extra_domains)
-        if (req.is_navigation_request() and req.frame.parent_frame is None) or cfg.strict_hosts:
-            if not same:
-                if stats is not None:
-                    stats.blocked.append(url)
-                await route.abort("blockedbyclient")
-                return
+        if ((req.is_navigation_request() and req.frame.parent_frame is None) or cfg.strict_hosts) and not same:
+            if stats is not None:
+                stats.blocked.append(url)
+            await route.abort("blockedbyclient")
+            return
         host_key = url.split("/")[2] if "//" in url else url
         ok = checked.get(host_key)
         if ok is None:

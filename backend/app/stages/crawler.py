@@ -8,6 +8,7 @@ unless explicitly allowed. Never submits forms other than the login form.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import re
 from collections.abc import Callable
@@ -33,43 +34,8 @@ LOGIN_LINK = re.compile(r"(?i)\b(log ?in|sign ?in)\b")
 COMMON_LOGIN_PATHS = ["/login", "/signin", "/sign-in", "/account/login", "/users/sign_in", "/auth/login"]
 
 # JS that summarizes the DOM into a compact, LLM-friendly structure (no raw HTML).
-DOM_SUMMARY_JS = r"""
-() => {
-  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
-  const txt = el => (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
-  const labelFor = el => {
-    if (el.labels && el.labels.length) return txt(el.labels[0]);
-    const al = el.getAttribute('aria-label'); if (al) return al;
-    const lb = el.getAttribute('aria-labelledby');
-    if (lb) { const n = document.getElementById(lb); if (n) return txt(n); }
-    return '';
-  };
-  const field = el => ({ tag: el.tagName.toLowerCase(), type: el.getAttribute('type') || (el.tagName === 'TEXTAREA' ? 'textarea' : el.tagName === 'SELECT' ? 'select' : 'text'),
-    name: el.getAttribute('name') || '', id: el.id || '', label: labelFor(el), placeholder: el.getAttribute('placeholder') || '',
-    required: el.required || false, testid: el.getAttribute('data-testid') || '' });
-  const buttons = [...document.querySelectorAll('button, [role=button], input[type=submit], input[type=button]')]
-    .filter(vis).slice(0, 40).map(b => ({ text: txt(b) || b.value || '', aria_label: b.getAttribute('aria-label') || '',
-      type: b.getAttribute('type') || '', id: b.id || '', testid: b.getAttribute('data-testid') || '' }));
-  const links = [...document.querySelectorAll('a[href]')].slice(0, 200).map(a => ({ href: a.href, text: txt(a) }));
-  const forms = [...document.querySelectorAll('form')].slice(0, 10).map(f => ({
-    action: f.getAttribute('action') || '', method: (f.getAttribute('method') || 'get').toLowerCase(), id: f.id || '',
-    fields: [...f.querySelectorAll('input, textarea, select')].filter(i => i.type !== 'hidden').slice(0, 20).map(field),
-    submit: (() => { const s = f.querySelector('button[type=submit], button:not([type]), input[type=submit]');
-      return s ? (txt(s) || s.value || '') : ''; })() }));
-  const loose = [...document.querySelectorAll('input, textarea, select')].filter(i => !i.form && i.type !== 'hidden' && vis(i)).slice(0, 20).map(field);
-  const headings = [...document.querySelectorAll('h1, h2, h3')].slice(0, 20).map(h => h.tagName.toLowerCase() + ': ' + txt(h));
-  const landmarks = [...document.querySelectorAll('header, nav, main, footer, aside, [role=navigation], [role=main], [role=search]')]
-    .slice(0, 12).map(l => l.tagName.toLowerCase() + (l.getAttribute('aria-label') ? '[' + l.getAttribute('aria-label') + ']' : ''));
-  const testids = [...document.querySelectorAll('[data-testid]')].slice(0, 30).map(e => e.getAttribute('data-testid'));
-  const alerts = [...document.querySelectorAll('[role=alert], [role=status]')].map(txt).filter(Boolean).slice(0, 5);
-  const main = document.querySelector('main') || document.body;
-  return { headings, landmarks, buttons, links, forms, loose_fields: loose, testids, alerts,
-    text: (main ? txt({ innerText: main.innerText.slice(0, 1200) }) : ''),
-    text_long: (main ? main.innerText.replace(/\s+/g, ' ').trim().slice(0, 600) : ''),
-    images: document.images.length, lang: document.documentElement.lang || '' };
-}
-"""
+_JS_FILE = Path(__file__).parent / "vendor" / "dom_summary.js"
+DOM_SUMMARY_JS = "\n".join(ln for ln in _JS_FILE.read_text(encoding="utf-8").splitlines() if not ln.startswith("//"))
 
 
 @dataclass
@@ -206,10 +172,8 @@ async def _api_record(resp: Response) -> dict[str, Any]:
 
 
 async def _settle(page: Page, ms: int = 2500) -> None:
-    try:
+    with contextlib.suppress(PWError):
         await page.wait_for_load_state("networkidle", timeout=ms)
-    except PWError:
-        pass
 
 
 async def visit(context: BrowserContext, url: str, depth: int, cfg: CrawlConfig, index: int) -> PageData:
