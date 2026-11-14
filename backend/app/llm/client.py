@@ -247,42 +247,42 @@ class LLMClient:
     async def structured(self, stage: str, prompt: RenderedPrompt, schema: type[M], *, role: str | None = None,
                          max_tokens: int = 3000) -> M:
         res = await self._call(stage, prompt, role=role, max_tokens=max_tokens, json_mode=True)
-        try:
-            obj = validate_json(res.text, schema)
-        except ValueError:
-            if res.cache_hit:  # stale/invalid cache entry (e.g. schema changed): drop and fetch fresh
-                self.cache.delete(res.key)
-                res = await self._call(stage, prompt, role=role, max_tokens=max_tokens, json_mode=True,
-                                       use_cache=False)
-                try:
-                    obj = validate_json(res.text, schema)
-                    self.cache.put(res.key, res.model, res.text, res.tokens_in, res.tokens_out)
-                    return obj
-                except ValueError as err:
-                    first_err = err
-            log.info("structured output invalid for %s (%s); repair retry", stage, first_err)
-            repair_msgs = [
-                {"role": "assistant", "content": res.text[:6000]},
-                {"role": "user", "content": (
-                    f"Your previous answer was invalid: {first_err}\n"
-                    "Return ONLY the corrected JSON object that matches the requested schema. No prose."
-                )},
-            ]
-            res2 = await self._call(stage, prompt, role=role, max_tokens=max_tokens, json_mode=True,
-                                    extra_messages=repair_msgs)
-            try:
-                obj = validate_json(res2.text, schema)
-            except ValueError as second_err:
-                self._log(stage=stage, model=res2.model, prompt=prompt, key=res2.key, status="invalid",
-                          error=str(second_err))
-                raise LLMInvalidOutput(f"{stage}: invalid structured output after repair: {second_err}") \
-                    from second_err
-            # Store the repaired answer under the ORIGINAL prompt key so re-runs are 0-call cache hits.
-            self.cache.put(res.key, res2.model, res2.text, res2.tokens_in, res2.tokens_out)
+        obj, error = self._try_validate(res.text, schema)
+        if obj is None and res.cache_hit:
+            # stale/invalid cache entry (e.g. schema changed): drop it and fetch fresh
+            self.cache.delete(res.key)
+            res = await self._call(stage, prompt, role=role, max_tokens=max_tokens, json_mode=True,
+                                   use_cache=False)
+            obj, error = self._try_validate(res.text, schema)
+        if obj is not None:
+            if not res.cache_hit:
+                self.cache.put(res.key, res.model, res.text, res.tokens_in, res.tokens_out)
             return obj
-        if not res.cache_hit:
-            self.cache.put(res.key, res.model, res.text, res.tokens_in, res.tokens_out)
+
+        log.info("structured output invalid for %s (%s); repair retry", stage, error)
+        repair_msgs = [
+            {"role": "assistant", "content": res.text[:6000]},
+            {"role": "user", "content": (
+                f"Your previous answer was invalid: {error}\n"
+                "Return ONLY the corrected JSON object that matches the requested schema. No prose."
+            )},
+        ]
+        res2 = await self._call(stage, prompt, role=role, max_tokens=max_tokens, json_mode=True,
+                                extra_messages=repair_msgs)
+        obj, error2 = self._try_validate(res2.text, schema)
+        if obj is None:
+            self._log(stage=stage, model=res2.model, prompt=prompt, key=res2.key, status="invalid", error=error2)
+            raise LLMInvalidOutput(f"{stage}: invalid structured output after repair: {error2}")
+        # Store the repaired answer under the ORIGINAL prompt key so re-runs are 0-call cache hits.
+        self.cache.put(res.key, res2.model, res2.text, res2.tokens_in, res2.tokens_out)
         return obj
+
+    @staticmethod
+    def _try_validate(text: str, schema: type[M]) -> tuple[M | None, str]:
+        try:
+            return validate_json(text, schema), ""
+        except ValueError as exc:
+            return None, str(exc)
 
 
 def build_client(*, run_id: int | None = None, secrets: list[str] | None = None,
