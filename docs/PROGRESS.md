@@ -48,8 +48,16 @@
   - mocked Mistral: 10/10 detected, 0 false positives, 7 LLM calls on the first run, then 0 calls and 3 cache hits on the re-run
 - End to end through the real UI (`scripts/ui_smoke.py`): create project → Run QA → live progress → all tabs → exports.
 
+- GitHub Actions (https://github.com/karshika/One-click-QA/actions) is green on commit `94acc5b`.
+  The `backend` job (ruff, mypy, pytest) and the `frontend` job (eslint, tsc, vitest, build) pass.
+  The `docker` job passes. It runs `docker compose up --build`, adds the demo app, completes a
+  QA run with no failed stage and at least 8 findings, and downloads the PDF report.
+- Fixes needed on the way to green CI:
+  - `pytest` `pythonpath`, so `tests.fakes` imports when `pytest` is called directly
+  - `libatomic1` in the backend image, required by Playwright's Node driver
+
 ## Known issues / next
-- `docker compose up` not executed (no Docker on the build machine).
+- Docker is verified on GitHub's Linux runners only. The build machine has no Docker.
 - No real Mistral run yet. Run `python scripts/acceptance.py` with a key to produce `docs/ACCEPTANCE.md`.
 - Ideas:
   - POST/PUT API checks with generated bodies (opt-in)

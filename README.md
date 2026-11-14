@@ -204,6 +204,7 @@ Docs: [Architecture](docs/ARCHITECTURE.md) · [Prompts](docs/PROMPTS.md) ·
   [SECURITY.md](docs/SECURITY.md) for the residual risks.
 * **Experimental vision check.** It is off by default. Its findings are labelled
   "AI-suggested, unverified".
-* **Docker untested.** Docker Compose was written but could not be executed on the build
-  machine (Docker not installed). The local setup was fully verified. See
-  [ASSUMPTIONS.md](docs/ASSUMPTIONS.md).
+* **Docker is verified in CI, not on the build machine.** The `docker` CI job runs
+  `scripts/docker_smoke.sh` on GitHub's Linux runners. It does `docker compose up --build`,
+  adds the demo app, runs QA end to end and downloads the report, and it passes. The build
+  machine had no Docker, so the local setup was verified with `scripts/dev.ps1`.

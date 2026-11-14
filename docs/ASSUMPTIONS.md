@@ -4,10 +4,11 @@ Recorded while building. Each item is a judgment call made without asking.
 
 ## Environment
 * The build machine had no Python, Git or Docker. Python 3.12 and Git were installed in user
-  scope with winget. Docker Desktop needs admin rights and WSL, so it was **not** installed.
-  The `docker-compose.yml` and Dockerfiles are written to the same layout as the verified
-  local commands, but `docker compose up` could not be executed on this machine. All
-  verification used the documented local commands (`scripts/dev.ps1` / `scripts/dev.sh`).
+  scope with winget. Docker Desktop needs admin rights, WSL2 and a reboot, so it was **not**
+  installed. Instead, `docker compose up` is verified in GitHub Actions (`docker` job →
+  `scripts/docker_smoke.sh`): it builds all images, adds the demo app, runs QA end to end and
+  checks the report. It passed on commit `94acc5b`. Local verification used
+  `scripts/dev.ps1`.
 * No `MISTRAL_API_KEY` was available while building, so no real Mistral call has been made.
   Tests cover the LLM layer in two ways:
   * the HTTP provider is tested with `respx` (mocked `/v1/chat/completions`: JSON mode
