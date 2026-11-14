@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# bookworm: a Debian release officially supported by `playwright install --with-deps`
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

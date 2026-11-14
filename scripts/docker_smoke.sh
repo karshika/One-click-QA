@@ -36,7 +36,7 @@ import sys, json
 r = json.load(sys.stdin)
 print("score:", r["score"], "llm_calls:", r["llm_calls"], "cache_hits:", r["cache_hits"])
 for s in r["stages"]:
-    print(f"  {s[\"stage\"]:9} {s[\"status\"]:9} {s.get(\"error\") or \"\"}")
+    print("  %-9s %-9s %s" % (s["stage"], s["status"], s.get("error") or ""))
 bad = [s for s in r["stages"] if s["status"] == "failed"]
 sys.exit(1 if bad else 0)'
 curl -fsS "$API/runs/$RID/findings" | python3 -c '
