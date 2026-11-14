@@ -68,6 +68,12 @@ class RunContext:
     storage_state: str | None = None
     journeys: list[JourneyData] = field(default_factory=list)
     tests: list[TestCaseData] = field(default_factory=list)
+    ui_results: list[Any] = field(default_factory=list)  # (TestCaseData, RunOutcome)
+    api_checks: list[Any] = field(default_factory=list)  # ApiCheck
+    api_mode: str = "none"
+    a11y_results: list[Any] = field(default_factory=list)  # PageA11y
+    perf_results: list[Any] = field(default_factory=list)  # PagePerf
+    vision_issues: list[dict[str, Any]] = field(default_factory=list)
     issues: list[dict[str, Any]] = field(default_factory=list)  # raw issues for the analyst
     degraded: dict[str, str] = field(default_factory=dict)  # stage → reason it fell back
 

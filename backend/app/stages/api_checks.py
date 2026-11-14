@@ -106,8 +106,9 @@ def sample_value(schema: dict[str, Any], name: str = "") -> Any:
         return float(max(1, schema.get("minimum", 1)))
     if t == "boolean":
         return True
-    if "anyOf" in schema or "oneOf" in schema:
-        return sample_value((schema.get("anyOf") or schema.get("oneOf"))[0], name)
+    variants = schema.get("anyOf") or schema.get("oneOf") or []
+    if variants:
+        return sample_value(variants[0], name)
     fmt = schema.get("format")
     if fmt == "email":
         return "qa@example.com"
