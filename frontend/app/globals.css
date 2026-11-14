@@ -11,12 +11,29 @@
   --muted: #4b5563;
   --accent: #2f5bea;
   --accent-contrast: #ffffff;
-  --good: #137a3f;
+  --good: #0e6630;
   --warn: #9a5b00;
   --bad: #b42318;
+  /* chart tokens (validated reference palette, light steps) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --chart-ink-muted: #6b6a65;
 }
 
 .dark {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --chart-ink-muted: #a3a29b;
   --bg: #0d1117;
   --surface: #151b23;
   --surface-2: #1c2430;
