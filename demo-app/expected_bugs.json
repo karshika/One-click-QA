@@ -1,0 +1,18 @@
+{
+  "bugs": [
+    {"id": "B1", "title": "Login accepts case-changed password", "category": "ui",
+     "any_text": ["login", "sign in", "sign-in", "password"], "url_contains": ""},
+    {"id": "B2", "title": "Image missing alt text", "category": "a11y", "rule": "image-alt"},
+    {"id": "B3", "title": "Button without accessible name", "category": "a11y", "rule": "button-name"},
+    {"id": "B4", "title": "Low-contrast button", "category": "a11y", "rule": "color-contrast"},
+    {"id": "B5", "title": "Slow page /reports", "category": "perf", "url_contains": "/reports"},
+    {"id": "B6", "title": "Layout shift on home page", "category": "perf", "metric": "cls"},
+    {"id": "B7", "title": "API 500 on product id 0", "category": "api", "url_contains": "/api/products/",
+     "check_any": ["server_error", "boundary"]},
+    {"id": "B8", "title": "Schema violation in /api/stats", "category": "api", "url_contains": "/api/stats",
+     "check_any": ["schema"]},
+    {"id": "B9", "title": "JavaScript console error on home", "category": "ui", "kind": "console_error"},
+    {"id": "B10", "title": "Broken link /old-pricing", "category": "ui", "kind": "broken_link",
+     "url_contains": "/old-pricing"}
+  ]
+}
