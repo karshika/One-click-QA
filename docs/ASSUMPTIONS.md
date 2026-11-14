@@ -8,10 +8,19 @@ Recorded while building. Each item is a judgment call made without asking.
   The `docker-compose.yml` and Dockerfiles are written to the same layout as the verified
   local commands, but `docker compose up` could not be executed on this machine. All
   verification used the documented local commands (`scripts/dev.ps1` / `scripts/dev.sh`).
-* No `MISTRAL_API_KEY` was available while building. The LLM layer is tested with a mocked
-  Mistral API (respx record/replay fixtures). Acceptance runs were done (a) with the
-  deterministic fallback (no key) and (b) with the mocked provider. The real e2e test is
-  marked and skipped without a key.
+* No `MISTRAL_API_KEY` was available while building, so no real Mistral call has been made.
+  Tests cover the LLM layer in two ways:
+  * the HTTP provider is tested with `respx` (mocked `/v1/chat/completions`: JSON mode
+    body, 429 + Retry-After, 5xx, 401);
+  * the full pipeline runs with `MockMistral`, which replays recorded answers from
+    `backend/tests/fixtures/mistral/*.json`.
+
+  Acceptance runs were done in deterministic mode (no key) and mock mode. Both gave 10/10
+  detected and 0 false positives. The real e2e test (`pytest -m e2e`) and
+  `scripts/acceptance.py` with a key are ready but were not executed. Real model output may
+  differ from the fixtures. The deterministic baseline (login negative tests, a11y, perf,
+  API and crawl checks) already covers every planted bug on its own, so detection does not
+  depend on model quality.
 
 ## Mistral (checked against docs.mistral.ai, Nov 2026)
 * Model overview lists Mistral Large 4 (v26.10, multimodal), Mistral Medium 3.5, Mistral Small 4
@@ -66,5 +75,19 @@ Recorded while building. Each item is a judgment call made without asking.
 * **Sandbox resource limits**: on Linux (Docker), test subprocesses get `RLIMIT_CPU`,
   `RLIMIT_FSIZE` and `RLIMIT_NOFILE` limits. On Windows only the wall-clock timeout and a
   process-tree kill apply.
+* **Worker concurrency**: the worker runs one run at a time globally, not just per
+  project. Browsers are heavy and the LLM rate limit is shared anyway. The API also
+  returns 409 if a project already has an active run.
+* **Bug-claim counting**: for acceptance, only findings classified `app_bug` count as
+  claims about the app. `test_error`, `flaky` and `environment` items are listed separately
+  in `docs/ACCEPTANCE-*.md`. Classifications of tool-verified findings are locked to
+  `app_bug`, so the LLM cannot hide them.
+* **Perf findings**: a page gets a finding if any Core Web Vital is not "good".
+  "Needs-improvement" is low severity and "poor" is medium.
+* **Analyst prompt stability**: perf timings sent to the analyst are bucketed (0.5 s steps;
+  CLS in 0.05 steps) so that run-to-run noise doesn't break the prompt cache. The
+  deterministic description keeps exact values.
+* **PerfMetric column `cls_score`**: a column named `cls` collides with SQLModel internals,
+  hence the different name.
 * **Finding status carry-over**: if a finding fingerprint was marked `ignored` in an earlier
   run of the same project, new runs keep it `ignored`.
